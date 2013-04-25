@@ -1,11 +1,13 @@
 require 'mechanize'
 require 'open-uri'
 require 'JSON'
-require 'data_mapper'
 
-#register Sinatra::Reloader
-#also_reload './helpers/helpers.rb'
-#Dir.glob("controllers/*.rb").each { |controller| also_reload controller }
+def require_and_reload(dir_glob)
+	Dir.glob(dir_glob).each do |file|
+		require_relative file
+		also_reload file
+	end
+end
 
 def get_baileys
   url = 'http://api.legitimatesounding.com/api/baileys'
@@ -33,24 +35,31 @@ def update(stuffs)
 		tap_moniker = tap[0]
 		beerdata = tap[1]
 
-		beer = Beer.first_or_create(
-			brewery: beerdata['brewery'],
-			name: beerdata['beer'],
-			glass: Glass.first_or_create(name: beerdata['glass']),
-			style: beerdata['style']
-			)
-		beer.status = :tapped
-		beer.type = determine_beer_type(tap_moniker)
-		beer.tapped_at = beerdata['added']
-		beer.save
+		tap = Tap.first_or_create(tap_moniker: tap_moniker)
 
-		tap = Tap.first_or_create(tap_moniker: tap_moniker, beer: beer)
-		puts "--------------------------------FILL #{tap_moniker} #{beerdata['fill']}"
-		fill = Fill.first_or_create(beer: beer, amount: beerdata['fill'])
+		existing_beer = Beer.first(tap: tap)
+		if existing_beer.brewery == beerdata['brewery'] and existing_beer.name == beerdata['beer'] and existing_beer.style == beerdata['style']
+			# Same beer!  Just update the fillage & prices.
+			beer = existing_beer
+		else
+			beer = Beer.first_or_create(
+				brewery: beerdata['brewery'],
+				name: beerdata['beer'],
+				style: beerdata['style']
+			)
+			beer.glass = Glass.first_or_create(name: beerdata['glass'])
+			beer.status = :tapped
+			beer.type = determine_beer_type(tap_moniker)
+			beer.tapped_at = beerdata['added']
+			beer.save
+		end
+
+		Fill.first_or_create(beer: beer, amount: beerdata['fill'])
 
 		beerdata['prices'].each do |price|
-			#price.gsub /\$/, ""
-			#Price.first_or_create(
+			price.match /(\d+\.\d+)/
+			# There's probably a better way to map these.  Figure it out.
+			Price.first_or_create(beer: beer, amount: $1.to_f)
 		end
 
 		puts tap.valid?

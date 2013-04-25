@@ -1,4 +1,5 @@
 require 'rspec'
+require 'data_mapper'
 require_relative 'helpers'
 require_relative 'models/tap'
 require_relative 'models/beer'
@@ -8,7 +9,7 @@ require_relative 'models/glass'
 
 DataMapper::Logger.new($stdout, :debug)
 #DataMapper.setup(:default, "sqlite::memory:")
-DataMapper.setup(:default, "postgres://localhost/beers")
+DataMapper.setup(:default, "postgres://localhost/beers_test")
 DataMapper.finalize
 DataMapper.auto_migrate!
 
@@ -25,9 +26,18 @@ describe "stuff" do
 	#	x['status'].should == "ok"
 	#end
 
-	it "should populate the list" do
-		update get_baileys
-		taps = Tap.all
-		taps.count.should > 0
+	#it "should populate the list" do
+	#	update get_baileys
+	#	taps = Tap.all
+	#	taps.count.should > 0
+	#end
+
+	# Todo: Sim fill: 1, it seems to fail
+
+	it "should give me a dollar-less price" do
+		["$4.50", "$2.50"].each do |price|
+			price.match /(\d+\.\d+)/
+			puts $1
+		end
 	end
 end
