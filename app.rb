@@ -6,6 +6,13 @@ require_relative 'helpers'
 register Sinatra::Reloader
 also_reload './helpers.rb'
 
+def require_and_reload(dir_glob)
+  Dir.glob(dir_glob).each do |file|
+    require_relative file
+    also_reload file
+  end
+end
+
 ["models/*.rb", "controllers/*.rb"].each do |dir_glob|
 	require_and_reload(dir_glob)
 end

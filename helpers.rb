@@ -6,13 +6,6 @@ require 'json'
 
 module Sinatra
 	module Helpers
-		def require_and_reload(dir_glob)
-			Dir.glob(dir_glob).each do |file|
-				require_relative file
-				also_reload file
-			end
-		end
-
 		def get_baileys
 			url = 'http://api.legitimatesounding.com/api/baileys'
 			intermediate = open(url).read
